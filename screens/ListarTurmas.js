@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Button, FlatList, Alert, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  FlatList,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 import { supabase } from "../supabase";
 import { useNavigation } from "@react-navigation/native";
 
@@ -33,7 +40,7 @@ export default function ListarTurmas() {
 
     const { data: turmasData, error: erroTurmas } = await supabase
       .from("turmas")
-      .select("id, nome, created_at")
+      .select("id, nome, numero, created_at")
       .eq("professor_id", prof.id)
       .order("created_at", { ascending: false });
 
@@ -52,50 +59,51 @@ export default function ListarTurmas() {
   }, [navigation]);
 
   async function excluirTurma(idTurma) {
-    Alert.alert(
-      "Confirmação",
-      "Tem certeza que deseja excluir esta turma?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          onPress: async () => {
-            const { count, error: erroCount } = await supabase
-              .from("atividades")
-              .select("*", { count: "exact", head: true })
-              .eq("turma_id", idTurma);
+    Alert.alert("Confirmação", "Tem certeza que deseja excluir esta turma?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        onPress: async () => {
+          const { count, error: erroCount } = await supabase
+            .from("atividades")
+            .select("*", { count: "exact", head: true })
+            .eq("turma_id", idTurma);
 
-            if (erroCount) {
-              Alert.alert("Erro", "Falha ao verificar atividades.");
-              return;
-            }
+          if (erroCount) {
+            Alert.alert("Erro", "Falha ao verificar atividades.");
+            return;
+          }
 
-            if (count > 0) {
-              Alert.alert("Aviso", "Você não pode excluir uma turma com atividades cadastradas.");
-              return;
-            }
+          if (count > 0) {
+            Alert.alert(
+              "Aviso",
+              "Você não pode excluir uma turma com atividades cadastradas."
+            );
+            return;
+          }
 
-            const { error: erroDel } = await supabase
-              .from("turmas")
-              .delete()
-              .eq("id", idTurma);
+          const { error: erroDel } = await supabase
+            .from("turmas")
+            .delete()
+            .eq("id", idTurma);
 
-            if (erroDel) {
-              Alert.alert("Erro", "Não foi possível excluir a turma.");
-            } else {
-              Alert.alert("Sucesso", "Turma excluída com sucesso!");
-              carregarTurmas();
-            }
-          },
+          if (erroDel) {
+            Alert.alert("Erro", "Não foi possível excluir a turma.");
+          } else {
+            Alert.alert("Sucesso", "Turma excluída com sucesso!");
+            carregarTurmas();
+          }
         },
-      ]
-    );
+      },
+    ]);
   }
 
   function visualizarAtividades(turma) {
     navigation.navigate("AtividadesTurma", {
       turmaId: turma.id,
       turmaNome: turma.nome,
+      turmaNumero: turma.numero,
+      turmaCreatedAt: turma.created_at,
     });
   }
 
@@ -125,7 +133,20 @@ export default function ListarTurmas() {
                 shadowRadius: 4,
               }}
             >
-              <Text style={{ fontSize: 18, fontWeight: "500" }}>{item.nome}</Text>
+              <Text style={{ fontSize: 18, fontWeight: "500" }}>
+                Nome da turma:
+              </Text>
+              <Text style={{ fontSize: 16, marginBottom: 5 }}>{item.nome}</Text>
+              <Text style={{ fontSize: 18, fontWeight: "500"}}>
+                Nº:
+              </Text>
+              <Text style={{ fontSize: 16, marginBottom: 5 }}>{item.numero}</Text>
+              <Text style={{ fontSize: 18, fontWeight: "500" }}>
+                Criado em:
+              </Text>
+              <Text style={{ fontSize: 16, marginBottom: 5 }}>
+                {new Date(item.created_at).toLocaleDateString()}
+              </Text>
               <View
                 style={{
                   flexDirection: "row",
@@ -145,6 +166,19 @@ export default function ListarTurmas() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("EditarTurma", { turma: item })
+                  }
+                  style={{
+                    backgroundColor: "#ffc107",
+                    padding: 8,
+                    borderRadius: 5,
+                  }}
+                >
+                  <Text style={{ color: "#000" }}>Editar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                   onPress={() => excluirTurma(item.id)}
                   style={{
                     backgroundColor: "#dc3545",
@@ -161,7 +195,10 @@ export default function ListarTurmas() {
       )}
 
       <View style={{ marginTop: 20 }}>
-        <Button title="Cadastrar Nova Turma" onPress={() => navigation.navigate("CadastrarTurma")} />
+        <Button
+          title="Cadastrar Nova Turma"
+          onPress={() => navigation.navigate("CadastrarTurma")}
+        />
       </View>
     </View>
   );
