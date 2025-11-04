@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Image
 } from "react-native";
 import { supabase } from "../supabase";
 
@@ -42,11 +43,11 @@ export default function CadastroProfessor({ navigation }) {
     try {
       setLoading(true);
 
-      // 1) Cria usuário no Auth
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: trimmedEmail,
-        password: trimmedSenha,
-      });
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email: trimmedEmail,
+          password: trimmedSenha,
+        });
 
       if (signUpError) {
         console.log("Erro ao cadastrar no Auth:", signUpError);
@@ -65,10 +66,9 @@ export default function CadastroProfessor({ navigation }) {
         return;
       }
 
-      // 2) Insere dados extras na tabela “professores”
       const { error: insertError } = await supabase
         .from("professores")
-        .insert([{ user_id: user.id, nome: trimmedNome }]);
+        .insert([{ id: user.id, nome: trimmedNome }]);
 
       if (insertError) {
         console.log("Erro ao inserir professor:", insertError);
@@ -76,18 +76,14 @@ export default function CadastroProfessor({ navigation }) {
         return;
       }
 
-      // Feedback pro usuário
       Alert.alert("Sucesso!", "Cadastro realizado! Vá para o login.");
 
-      // Logout imediato pra não criar sessão automática
       await supabase.auth.signOut();
 
-      // Limpa campos
       setNome("");
       setEmail("");
       setSenha("");
 
-      // Navega para Login
       navigation.replace("Login");
     } catch (err) {
       console.log("Erro inesperado:", err);
@@ -103,6 +99,10 @@ export default function CadastroProfessor({ navigation }) {
       style={{ flex: 1 }}
     >
       <ScrollView contentContainerStyle={styles.container}>
+        <Image
+          source={require("../src/assets/logo_escola.png")}
+          style={styles.logo}
+        />
         <Text style={styles.title}>Cadastrar Professor</Text>
 
         <TextInput
@@ -140,10 +140,13 @@ export default function CadastroProfessor({ navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.link}
+          style={styles.linkContainer}
           onPress={() => navigation.replace("Login")}
         >
-          <Text style={{ color: "#20568c" }}>Já tem conta? Entrar</Text>
+          {" "}
+          <Text style={styles.linkText}>
+            Já possui conta?<Text style={styles.linkBold}> Entrar</Text>
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -154,37 +157,63 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#fff",
+    padding: 30,
+    backgroundColor: "#c3cdd5ff",
+  },
+  logo: {
+    width: 250,
+    height: 250,
+    alignSelf: "center",
+    marginBottom: -10,
+    marginTop: -80,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 30,
+    marginBottom: 50,
     textAlign: "center",
     color: "#20568c",
   },
   input: {
-    backgroundColor: "#f2f2f2",
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: "#ecececff",
+    marginBottom: 15,
+    padding: 15,
+    borderRadius: 15,
     fontSize: 16,
+    color: "#000",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
   },
   button: {
     backgroundColor: "#20568c",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 20,
     alignItems: "center",
+    shadowColor: "rgba(17, 69, 80, 1)",
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
     marginTop: 10,
+    width: 200,
+    marginLeft: 70,
   },
   buttonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
   },
-  link: {
-    marginTop: 15,
+  linkContainer: {
+    marginTop: 20,
     alignItems: "center",
+  },
+  linkText: {
+    fontSize: 16,
+    color: "#000",
+  },
+  linkBold: {
+    color: "#20568c",
+    fontWeight: "bold",
   },
 });

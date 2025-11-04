@@ -1,4 +1,3 @@
-import 'expo-sqlite/localStorage/install'; 
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = 'https://bmoynkkztvzvvfpjizol.supabase.co';
