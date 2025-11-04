@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { supabase } from "../supabase";
 
@@ -19,49 +20,78 @@ export default function CadastroProfessor({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
-    if (!nome || !email || !senha) {
+    const trimmedNome = nome.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedSenha = senha.trim();
+
+    if (!trimmedNome || !trimmedEmail || !trimmedSenha) {
       Alert.alert("Erro", "Preencha todos os campos!");
       return;
     }
 
-    if (!email.includes("@") || senha.length < 6) {
-      Alert.alert("Erro", "Digite um e-mail válido e uma senha com pelo menos 6 caracteres.");
+    if (!trimmedEmail.includes("@") || !trimmedEmail.includes(".")) {
+      Alert.alert("Erro", "Digite um e‑mail válido!");
+      return;
+    }
+
+    if (trimmedSenha.length < 6) {
+      Alert.alert("Erro", "A senha deve ter pelo menos 6 caracteres.");
       return;
     }
 
     try {
       setLoading(true);
 
-      // cria o usuário no auth.users
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password: senha,
+      // 1) Cria usuário no Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password: trimmedSenha,
       });
 
-      if (error) throw error;
-
-      const userId = data?.user?.id;
-
-      if (!userId) {
-        Alert.alert("Erro", "Não foi possível criar o usuário.");
+      if (signUpError) {
+        console.log("Erro ao cadastrar no Auth:", signUpError);
+        Alert.alert(
+          "Erro no cadastro",
+          signUpError.message.includes("registered")
+            ? "Esse e‑mail já está cadastrado!"
+            : signUpError.message
+        );
         return;
       }
 
-      // insere os dados do professor na tabela professores
+      const user = signUpData?.user;
+      if (!user) {
+        Alert.alert("Erro", "Usuário não foi criado corretamente.");
+        return;
+      }
+
+      // 2) Insere dados extras na tabela “professores”
       const { error: insertError } = await supabase
         .from("professores")
-        .insert([{ user_id: userId, nome }]);
+        .insert([{ user_id: user.id, nome: trimmedNome }]);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.log("Erro ao inserir professor:", insertError);
+        Alert.alert("Erro", "Não foi possível salvar o professor no banco.");
+        return;
+      }
 
-      Alert.alert(
-        "Sucesso",
-        "Conta criada com sucesso! Agora é só fazer login 😄"
-      );
-      navigation.navigate("Login");
+      // Feedback pro usuário
+      Alert.alert("Sucesso!", "Cadastro realizado! Vá para o login.");
+
+      // Logout imediato pra não criar sessão automática
+      await supabase.auth.signOut();
+
+      // Limpa campos
+      setNome("");
+      setEmail("");
+      setSenha("");
+
+      // Navega para Login
+      navigation.replace("Login");
     } catch (err) {
-      Alert.alert("Erro ao cadastrar", err.message);
-      console.log("Erro Supabase:", err);
+      console.log("Erro inesperado:", err);
+      Alert.alert("Erro", "Algo deu errado. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -83,7 +113,7 @@ export default function CadastroProfessor({ navigation }) {
         />
         <TextInput
           style={styles.input}
-          placeholder="E-mail"
+          placeholder="E‑mail"
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
@@ -98,18 +128,20 @@ export default function CadastroProfessor({ navigation }) {
         />
 
         <TouchableOpacity
-          style={[styles.button, loading && { opacity: 0.6 }]}
+          style={[styles.button, loading && { opacity: 0.7 }]}
           onPress={handleSignUp}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
-            {loading ? "Cadastrando..." : "Cadastrar"}
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Cadastrar</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.link}
-          onPress={() => navigation.navigate("Login")}
+          onPress={() => navigation.replace("Login")}
         >
           <Text style={{ color: "#20568c" }}>Já tem conta? Entrar</Text>
         </TouchableOpacity>
@@ -137,12 +169,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12,
     borderRadius: 10,
+    fontSize: 16,
   },
   button: {
     backgroundColor: "#20568c",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
+    marginTop: 10,
   },
   buttonText: {
     color: "#fff",

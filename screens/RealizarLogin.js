@@ -31,20 +31,20 @@ export default function RealizarLogin({ navigation }) {
     try {
       setLoading(true);
 
-      // faz o login no Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: senha,
       });
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          Alert.alert("Erro", "E-mail ou senha incorretos!");
-        } else if (error.message.includes("Email not confirmed")) {
-          Alert.alert("Erro", "Confirme seu e-mail antes de entrar!");
-        } else {
-          Alert.alert("Erro ao logar", error.message);
-        }
+        Alert.alert(
+          "Erro ao logar",
+          error.message.includes("Invalid login credentials")
+            ? "E-mail ou senha incorretos!"
+            : error.message.includes("Email not confirmed")
+            ? "Confirme seu e-mail antes de entrar!"
+            : error.message
+        );
         return;
       }
 
@@ -54,7 +54,6 @@ export default function RealizarLogin({ navigation }) {
         return;
       }
 
-      // pega info do professor associado ao user_id
       const { data: profData, error: profError } = await supabase
         .from("professores")
         .select("id, nome")
@@ -62,20 +61,22 @@ export default function RealizarLogin({ navigation }) {
         .single();
 
       if (profError || !profData) {
-        console.log("Erro professor:", profError);
-        Alert.alert("Erro", "Professor não encontrado no banco!");
+        Alert.alert(
+          "Erro",
+          "Professor não encontrado no banco. Verifique se o cadastro foi feito corretamente!"
+        );
         return;
       }
 
-      // sucesso → navega pra tela principal
-      navigation.navigate("TelaPrincipalProfessor", {
+      // Navega para a tela do professor
+      navigation.navigate("TelaProfessor", {
         userId: user.id,
         professorId: profData.id,
         nome: profData.nome,
       });
     } catch (err) {
       console.log("Erro de login:", err);
-      Alert.alert("Erro ao logar", err.message);
+      Alert.alert("Erro ao logar", err.message || "Erro inesperado!");
     } finally {
       setLoading(false);
     }
@@ -122,7 +123,10 @@ export default function RealizarLogin({ navigation }) {
           style={styles.linkContainer}
         >
           <Text style={styles.linkText}>
-            Não tem conta? <Text style={{ color: "#20568c" }}>Cadastre-se</Text>
+            Não tem conta?{" "}
+            <Text style={{ color: "#20568c", fontWeight: "bold" }}>
+              Cadastre-se
+            </Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -149,6 +153,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12,
     borderRadius: 10,
+    fontSize: 16,
   },
   button: {
     backgroundColor: "#20568c",
