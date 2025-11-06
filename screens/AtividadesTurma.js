@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   cadastrarBtn: {
-    backgroundColor: "#3568d4",
+    backgroundColor: "#20568c",
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: "center",
@@ -318,12 +318,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     borderLeftWidth: 5,
-    borderLeftColor: "#3568d4",
+    borderLeftColor: "#20568c",
   },
   numero: {
     fontSize: 15,
     fontWeight: "bold",
-    color: "#3568d4",
+    color: "#20568c",
   },
   titulo: {
     fontSize: 18,
@@ -344,13 +344,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   editBtn: {
-    backgroundColor: "#2d7efb",
+    backgroundColor: "#ffc107",
     paddingVertical: 6,
     paddingHorizontal: 15,
     borderRadius: 10,
   },
   deleteBtn: {
-    backgroundColor: "#d64545",
+    backgroundColor: "#dc3545",
     paddingVertical: 6,
     paddingHorizontal: 15,
     borderRadius: 10,
