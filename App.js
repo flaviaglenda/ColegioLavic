@@ -17,6 +17,7 @@ import CadastrarTurma from "./screens/CadastrarTurma";
 import ListarTurmas from "./screens/ListarTurmas";
 import TelaProfessor from "./screens/TelaProfessor";
 import AtividadesTurma from "./screens/AtividadesTurma";
+import EditarTurma from "./screens/EditarTurma";
 
 const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
@@ -112,6 +113,13 @@ function AppDrawer() {
           drawerIcon: ({ color, size }) => (
             <Ionicons name="book-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Drawer.Screen
+        name="EditarTurma"
+        component={EditarTurma}
+        options={{
+          drawerLabel: "",        
         }}
       />
     </Drawer.Navigator>
