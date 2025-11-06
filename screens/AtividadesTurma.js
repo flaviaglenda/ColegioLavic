@@ -20,6 +20,8 @@ export default function AtividadesTurma({ route, navigation }) {
   const [atividades, setAtividades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [atividadeSelecionada, setAtividadeSelecionada] = useState(null);
   const [novaAtividade, setNovaAtividade] = useState({
     titulo: "",
     descricao: "",
@@ -46,18 +48,7 @@ export default function AtividadesTurma({ route, navigation }) {
         }
 
         setProfessor(turmaData.professores);
-
-        const { data: atividadesData, error: atividadesError } = await supabase
-          .from("atividades")
-          .select("*")
-          .eq("turma_id", turmaId)
-          .order("numero", { ascending: true });
-
-        if (atividadesError) {
-          Alert.alert("Erro", "Não foi possível carregar as atividades.");
-        } else {
-          setAtividades(atividadesData || []);
-        }
+        await carregarAtividades();
       } catch (err) {
         console.log(err);
         Alert.alert("Erro", "Algo deu errado ao carregar os dados.");
@@ -67,40 +58,33 @@ export default function AtividadesTurma({ route, navigation }) {
     })();
   }, [turmaId]);
 
-  const confirmarLogout = () => {
-    Alert.alert(
-      "Sair da conta",
-      "Tem certeza que deseja sair?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Sim, sair",
-          style: "destructive",
-          onPress: () => realizarLogout(), // chama a função de logout real
-        },
-      ],
-      { cancelable: true }
-    );
+  const carregarAtividades = async () => {
+    const { data, error } = await supabase
+      .from("atividades")
+      .select("*")
+      .eq("turma_id", turmaId)
+      .order("numero", { ascending: true });
+
+    if (error) {
+      console.log(error);
+      Alert.alert("Erro", "Não foi possível carregar as atividades.");
+    } else {
+      setAtividades(data || []);
+    }
   };
-const realizarLogout = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
 
-    // Reseta a navegação completamente e volta pro login
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Login" }],
-    });
-  } catch (error) {
-    console.log("Erro ao sair:", error);
-    Alert.alert("Erro", "Não foi possível sair da conta.");
-  }
-};
-
-
-  const abrirModal = () => {
-    setNovaAtividade({ titulo: "", descricao: "" });
+  const abrirModal = (atividade = null) => {
+    if (atividade) {
+      setEditando(true);
+      setAtividadeSelecionada(atividade);
+      setNovaAtividade({
+        titulo: atividade.titulo,
+        descricao: atividade.descricao,
+      });
+    } else {
+      setEditando(false);
+      setNovaAtividade({ titulo: "", descricao: "" });
+    }
     setModalVisible(true);
   };
 
@@ -111,32 +95,91 @@ const realizarLogout = async () => {
     }
 
     try {
-      const proximoNumero = atividades.length + 1;
-
-      const { data, error } = await supabase
-        .from("atividades")
-        .insert([
-          {
-            turma_id: turmaId,
-            numero: proximoNumero,
+      if (editando && atividadeSelecionada) {
+        const { error } = await supabase
+          .from("atividades")
+          .update({
             titulo: novaAtividade.titulo,
             descricao: novaAtividade.descricao,
-          },
-        ])
-        .select();
+          })
+          .eq("id", atividadeSelecionada.id);
 
-      if (error) {
-        console.log(error);
-        Alert.alert("Erro", "Não foi possível cadastrar a atividade.");
-        return;
+        if (error) throw error;
+
+        setAtividades((prev) =>
+          prev.map((a) =>
+            a.id === atividadeSelecionada.id ? { ...a, ...novaAtividade } : a
+          )
+        );
+
+        Alert.alert("Sucesso", "Atividade atualizada!");
+      } else {
+        const proximoNumero = atividades.length + 1;
+        const { data, error } = await supabase
+          .from("atividades")
+          .insert([
+            {
+              turma_id: turmaId,
+              numero: proximoNumero,
+              titulo: novaAtividade.titulo,
+              descricao: novaAtividade.descricao,
+            },
+          ])
+          .select();
+
+        if (error) throw error;
+
+        setAtividades((prev) => [...prev, data[0]]);
+        Alert.alert("Sucesso", "Atividade cadastrada!");
       }
 
-      setAtividades((prev) => [...prev, data[0]]);
       setModalVisible(false);
     } catch (err) {
       console.log(err);
       Alert.alert("Erro", "Falha ao salvar atividade.");
     }
+  };
+
+  const excluirAtividade = async (atividadeId) => {
+    Alert.alert(
+      "Excluir atividade",
+      "Tem certeza que deseja excluir esta atividade?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              console.log("Tentando excluir atividade ID:", atividadeId);
+              const { data, error } = await supabase
+                .from("atividades")
+                .delete()
+                .eq("id", atividadeId)
+                .select();
+
+              console.log("DELETE RESULT:", { data, error });
+
+              if (error) throw error;
+              if (!data || data.length === 0) {
+                console.warn("Nenhuma linha foi deletada, talvez o ID esteja errado?");
+              }
+
+              setAtividades((prev) =>
+                prev.filter((a) => a.id !== atividadeId)
+              );
+              Alert.alert("Sucesso", "Atividade excluída!");
+            } catch (err) {
+              console.error("Erro ao excluir:", err);
+              Alert.alert(
+                "Erro",
+                "Não foi possível excluir a atividade. Veja o console para detalhes."
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
@@ -147,12 +190,11 @@ const realizarLogout = async () => {
         <Text style={styles.profNome}>
           {professor?.nome ? `Prof. ${professor.nome}` : "Professor"}
         </Text>
-
       </View>
 
       <Text style={styles.turmaTitulo}>{turmaNome}</Text>
 
-      <TouchableOpacity style={styles.cadastrarBtn} onPress={abrirModal}>
+      <TouchableOpacity style={styles.cadastrarBtn} onPress={() => abrirModal()}>
         <Text style={styles.cadastrarText}>Cadastrar Atividade</Text>
       </TouchableOpacity>
 
@@ -166,6 +208,22 @@ const realizarLogout = async () => {
             <Text style={styles.numero}>Atividade #{atividade.numero}</Text>
             <Text style={styles.titulo}>{atividade.titulo}</Text>
             <Text style={styles.descricao}>{atividade.descricao}</Text>
+
+            <View style={styles.cardBtns}>
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() => abrirModal(atividade)}
+              >
+                <Text style={styles.btnText}>Editar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={() => excluirAtividade(atividade.id)}
+              >
+                <Text style={styles.btnText}>Excluir</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}
@@ -173,7 +231,9 @@ const realizarLogout = async () => {
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Cadastrar Atividade</Text>
+            <Text style={styles.modalTitle}>
+              {editando ? "Editar Atividade" : "Cadastrar Atividade"}
+            </Text>
             <TextInput
               placeholder="Título da atividade"
               value={novaAtividade.titulo}
@@ -193,7 +253,9 @@ const realizarLogout = async () => {
             />
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.saveBtn} onPress={salvarAtividade}>
-                <Text style={styles.saveText}>Salvar</Text>
+                <Text style={styles.saveText}>
+                  {editando ? "Salvar Alterações" : "Salvar"}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.cancelBtn}
@@ -225,7 +287,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: "#1a3c6e",
-    letterSpacing: 0.5,
   },
   turmaTitulo: {
     fontSize: 34,
@@ -234,10 +295,6 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     marginTop: 10,
     textAlign: "center",
-    letterSpacing: 0.8,
-    textShadowColor: "rgba(0, 0, 0, 0.37)",
-    textShadowOffset: { width: 3, height: 1 },
-    textShadowRadius: 3,
   },
   cadastrarBtn: {
     backgroundColor: "#3568d4",
@@ -245,16 +302,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     marginBottom: 20,
-    shadowColor: "#3568d4",
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
   },
   cadastrarText: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 17,
-    letterSpacing: 0.5,
   },
   card: {
     backgroundColor: "#fff",
@@ -272,7 +324,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "bold",
     color: "#3568d4",
-    marginBottom: 5,
   },
   titulo: {
     fontSize: 18,
@@ -286,6 +337,28 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 20,
   },
+  cardBtns: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 10,
+    gap: 10,
+  },
+  editBtn: {
+    backgroundColor: "#2d7efb",
+    paddingVertical: 6,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+  },
+  deleteBtn: {
+    backgroundColor: "#d64545",
+    paddingVertical: 6,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+  },
+  btnText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -298,10 +371,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
     width: "90%",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
   },
   modalTitle: {
     fontSize: 20,
@@ -332,16 +401,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: "#1a3c6e",
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
   },
   saveText: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 15,
-    letterSpacing: 0.4,
   },
   cancelBtn: {
     backgroundColor: "#9ba5b5",
@@ -350,15 +414,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
   },
   cancelText: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 15,
-    letterSpacing: 0.4,
   },
 });

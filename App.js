@@ -15,7 +15,7 @@ import RealizarLogin from "./screens/RealizarLogin";
 import RealizarCadastro from "./screens/CadastroProfessor";
 import CadastrarTurma from "./screens/CadastrarTurma";
 import ListarTurmas from "./screens/ListarTurmas";
-import TelaProfessor from "./screens/TelaProfessor";
+import TelaProfessor from "./screens/ListarTurmas";
 import AtividadesTurma from "./screens/AtividadesTurma";
 import EditarTurma from "./screens/EditarTurma";
 
@@ -126,16 +126,6 @@ function AppDrawer() {
           drawerLabel: "Cadastrar Turma",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="add-circle-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="ListarTurmas"
-        component={ListarTurmas}
-        options={{
-          drawerLabel: "Listar Turmas",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="list-outline" size={size} color={color} />
           ),
         }}
       />
