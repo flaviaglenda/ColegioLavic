@@ -7,7 +7,7 @@ import {
   DrawerItem,
 } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "./supabase";
 
@@ -23,10 +23,10 @@ const Drawer = createDrawerNavigator();
 const Stack = createNativeStackNavigator();
 
 const PRIMARY_COLOR = "#20568c";
-const ACCENT_COLOR = "#FFD700";
+const ACCENT_COLOR = "#e2c20bff";
 const BACKGROUND_COLOR = "#20568c";
 const TEXT_COLOR = "#eae8e8ff";
-const HEADER_BACKGROUND = "#FFFFFF";
+const HEADER_BACKGROUND = "#20568c";
 
 function CustomDrawer(props) {
   const [professorNome, setProfessorNome] = useState("");
@@ -93,9 +93,19 @@ function AppDrawer() {
       screenOptions={{
         ...drawerNavigatorOptions,
         headerShown: true,
-        headerTitle: "",
-        headerTitleAlign: "left",
+        headerTitleAlign: "center",
+        headerTintColor: "#ffffffff", 
         headerStyle: drawerStyles.screenHeader,
+        headerTitle: () => (
+          <Image
+            source={require("./src/assets/logo_escola_adaptada.png")}
+            style={{
+              width: 190,
+              height: 250,
+              resizeMode: "contain",
+            }}
+          />
+        ),
       }}
       drawerContent={(props) => <CustomDrawer {...props} />}
     >
@@ -129,7 +139,6 @@ function AppDrawer() {
           ),
         }}
       />
-
       <Drawer.Screen
         name="AtividadesTurma"
         component={AtividadesTurma}
@@ -137,7 +146,6 @@ function AppDrawer() {
           drawerItemStyle: { display: "none" },
         }}
       />
-
       <Drawer.Screen
         name="EditarTurma"
         component={EditarTurma}
