@@ -348,6 +348,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 15,
     borderRadius: 10,
+    color: "#000",
   },
   deleteBtn: {
     backgroundColor: "#dc3545",
