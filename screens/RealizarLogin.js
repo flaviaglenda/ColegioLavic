@@ -1,16 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Image,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image,} from "react-native";
 import { supabase } from "../supabase";
 
 export default function RealizarLogin({ navigation }) {
@@ -32,7 +21,6 @@ export default function RealizarLogin({ navigation }) {
     setLoading(true);
 
     try {
-      // Login com Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: senha,

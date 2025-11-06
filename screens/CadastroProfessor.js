@@ -104,6 +104,7 @@ export default function CadastroProfessor({ navigation }) {
           style={styles.logo}
         />
         <Text style={styles.title}>Cadastrar</Text>
+        <Text style={styles.subtitle}>Crie sua conta para continuar</Text>
 
         <TextInput
           style={styles.input}
@@ -170,9 +171,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 50,
+    marginBottom: 10,
     textAlign: "center",
     color: "#20568c",
+  },
+   subtitle: {
+    fontSize: 16,
+    color: "#3e3e3eff",
+    textAlign: "center",
+    marginBottom: 30,
   },
   input: {
     backgroundColor: "#ecececff",
