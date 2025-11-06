@@ -103,7 +103,7 @@ export default function CadastroProfessor({ navigation }) {
           source={require("../src/assets/logo_escola.png")}
           style={styles.logo}
         />
-        <Text style={styles.title}>Cadastrar Professor</Text>
+        <Text style={styles.title}>Cadastrar</Text>
 
         <TextInput
           style={styles.input}
