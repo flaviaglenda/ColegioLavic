@@ -13,6 +13,10 @@ Aplicativo mobile desenvolvido em **React Native + Expo** utilizando **Supabase*
 
 ---
 
+# usuário para login (ou você pode se cadastrar)
+email: flavia@gmail.com
+senha: 1234567
+
 ## 🚀 Tecnologias / Dependências
 
 | Pacote | Descrição |
