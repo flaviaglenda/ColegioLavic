@@ -14,10 +14,10 @@ Aplicativo mobile desenvolvido em **React Native + Expo** utilizando **Supabase*
 
 ---
 
-# usuário para login (ou você pode se cadastrar)
-email: teste@gmail.com
+# Usuário para login (ou você pode se cadastrar)
+Email: teste@gmail.com
 
-senha: 12345678
+Senha: 12345678
 
 ## 🚀 Tecnologias / Dependências
 
@@ -57,3 +57,4 @@ yarn install
 npx expo start
 ```
 ### Clique na leta W e aguarda o app abrir
+
