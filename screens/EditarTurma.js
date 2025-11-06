@@ -1,13 +1,6 @@
+// Flávia Glenda e Lucas Randal
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator,} from "react-native";
 import { supabase } from "../supabase";
 
 export default function EditarTurma({ route, navigation }) {

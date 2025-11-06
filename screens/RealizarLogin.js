@@ -1,3 +1,4 @@
+// Flávia Glenda e Lucas Randal
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image,} from "react-native";
 import { supabase } from "../supabase";

@@ -1,3 +1,4 @@
+<!-- Flávia Glenda e Lucas Randal -->
 # 📚 Escola Lavic — Aplicativo Mobile
 
 Aplicativo mobile desenvolvido em **React Native + Expo** utilizando **Supabase** como backend para gerenciamento escolar voltado para professores.

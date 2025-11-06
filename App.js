@@ -1,11 +1,7 @@
+// Flávia Glenda e Lucas Randal
 import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import {
-  createDrawerNavigator,
-  DrawerContentScrollView,
-  DrawerItemList,
-  DrawerItem,
-} from "@react-navigation/drawer";
+import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerItem,} from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { View, ActivityIndicator, StyleSheet, Text, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";

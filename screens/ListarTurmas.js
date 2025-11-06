@@ -1,12 +1,6 @@
+// Flávia Glenda e Lucas Randal
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  Button,
-  FlatList,
-  Alert,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, Button, FlatList, Alert, TouchableOpacity,} from "react-native";
 import { supabase } from "../supabase";
 import { useNavigation } from "@react-navigation/native";
 
