@@ -29,9 +29,10 @@ export default function RealizarLogin({ navigation }) {
       return;
     }
 
-    try {
-      setLoading(true);
+    setLoading(true);
 
+    try {
+      // Login com Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: senha,
@@ -46,12 +47,14 @@ export default function RealizarLogin({ navigation }) {
             ? "Confirme seu e-mail antes de entrar!"
             : error.message
         );
+        setLoading(false);
         return;
       }
 
       const user = data?.user;
       if (!user) {
         Alert.alert("Erro", "Usuário não encontrado!");
+        setLoading(false);
         return;
       }
 
@@ -66,6 +69,7 @@ export default function RealizarLogin({ navigation }) {
           "Erro",
           "Professor não encontrado no banco. Verifique se o cadastro foi feito corretamente!"
         );
+        setLoading(false);
         return;
       }
 
@@ -76,7 +80,10 @@ export default function RealizarLogin({ navigation }) {
       });
     } catch (err) {
       console.log("Erro de login:", err);
-      Alert.alert("Erro ao logar", err.message || "Erro inesperado!");
+      Alert.alert(
+        "Erro ao logar",
+        err?.message || "Ocorreu um erro inesperado. Verifique sua conexão."
+      );
     } finally {
       setLoading(false);
     }
@@ -148,9 +155,9 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 250,
-    height: 250, 
+    height: 250,
     alignSelf: "center",
-    marginBottom:-10,
+    marginBottom: -10,
     marginTop: -80,
   },
   title: {
@@ -188,7 +195,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 5 },
     marginTop: 10,
-    width:110,
+    width: 110,
     marginLeft: 120,
   },
   buttonText: {
