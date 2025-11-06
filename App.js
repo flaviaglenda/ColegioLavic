@@ -7,7 +7,7 @@ import {
   DrawerItem,
 } from "@react-navigation/drawer";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "./supabase";
 
@@ -28,15 +28,41 @@ const BACKGROUND_COLOR = "#20568c";
 const TEXT_COLOR = "#eae8e8ff";
 const HEADER_BACKGROUND = "#FFFFFF";
 
-// Custom drawer com logout
 function CustomDrawer(props) {
+  const [professorNome, setProfessorNome] = useState("");
+
+  useEffect(() => {
+    const buscarProfessor = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from("professores")
+          .select("nome")
+          .eq("id", user.id)
+          .single();
+
+        if (!error && data) setProfessorNome(data.nome);
+      }
+    };
+    buscarProfessor();
+  }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
   return (
     <DrawerContentScrollView {...props} style={drawerStyles.drawerContainer}>
+      <View style={drawerStyles.headerContainer}>
+        <Text style={drawerStyles.professorNome}>
+          {professorNome || "Carregando..."}
+        </Text>
+      </View>
+
       <DrawerItemList {...props} />
+
       <View style={drawerStyles.logoutItem}>
         <DrawerItem
           label="Sair"
@@ -51,7 +77,6 @@ function CustomDrawer(props) {
   );
 }
 
-// Stack só para Login e Cadastro
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -61,7 +86,6 @@ function AuthStack() {
   );
 }
 
-// Drawer pro usuário logado
 function AppDrawer() {
   return (
     <Drawer.Navigator
@@ -105,21 +129,21 @@ function AppDrawer() {
           ),
         }}
       />
+
       <Drawer.Screen
         name="AtividadesTurma"
         component={AtividadesTurma}
         options={{
-          drawerLabel: "Atividades da Turma",
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
-          ),
+          drawerItemStyle: { display: "none" },
         }}
       />
+
       <Drawer.Screen
         name="EditarTurma"
         component={EditarTurma}
         options={{
-          drawerLabel: "",        
+          headerShown: true,
+          drawerItemStyle: { display: "none" },
         }}
       />
     </Drawer.Navigator>
@@ -169,6 +193,19 @@ const drawerStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: BACKGROUND_COLOR,
   },
+  headerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 30,
+    borderBottomColor: "#ffffff33",
+    borderBottomWidth: 1,
+  },
+  professorNome: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 8,
+  },
   logoutItem: {
     marginTop: 20,
     borderTopWidth: 1,
@@ -177,7 +214,7 @@ const drawerStyles = StyleSheet.create({
     marginHorizontal: 10,
   },
   logoutLabel: {
-    color: "#ef3636ff",
+    color: "#f12e2eff",
     fontWeight: "bold",
     fontSize: 16,
   },

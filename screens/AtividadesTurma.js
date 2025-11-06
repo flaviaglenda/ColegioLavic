@@ -12,82 +12,95 @@ import {
 } from "react-native";
 import { supabase } from "../supabase";
 
-export default function AtividadesTurma({ navigation }) {
+export default function AtividadesTurma({ route, navigation }) {
+  const turmaId = route?.params?.turmaId;
+  const turmaNome = route?.params?.turmaNome;
+
   const [professor, setProfessor] = useState(null);
-  const [turmas, setTurmas] = useState([]);
+  const [atividades, setAtividades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [novaAtividade, setNovaAtividade] = useState({ titulo: "", descricao: "", turmaId: "" });
+  const [novaAtividade, setNovaAtividade] = useState({
+    titulo: "",
+    descricao: "",
+  });
 
-  // Carrega professor e turmas
   useEffect(() => {
+    if (!turmaId) {
+      Alert.alert("Erro", "Turma não informada!");
+      navigation.goBack();
+      return;
+    }
+
     (async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) {
-          Alert.alert("Erro", "Usuário não encontrado!");
-          setLoading(false);
-          return;
-        }
-
-        const userId = user.id;
-
-        const { data: profData, error: profError } = await supabase
-          .from("professores")
-          .select("*")
-          .eq("user_id", userId)
+        const { data: turmaData, error: turmaError } = await supabase
+          .from("turmas")
+          .select("*, professores (nome)")
+          .eq("id", turmaId)
           .single();
 
-        if (profError || !profData) {
-          Alert.alert("Erro", "Professor não encontrado!");
-          setLoading(false);
+        if (turmaError || !turmaData) {
+          Alert.alert("Erro", "Não foi possível carregar a turma!");
           return;
         }
 
-        setProfessor(profData);
+        setProfessor(turmaData.professores);
 
-        // Carrega turmas
-        const { data: turmasData, error: turmasError } = await supabase
-          .from("turmas")
+        const { data: atividadesData, error: atividadesError } = await supabase
+          .from("atividades")
           .select("*")
-          .eq("professor_id", profData.id);
+          .eq("turma_id", turmaId)
+          .order("numero", { ascending: true });
 
-        if (turmasError) {
-          Alert.alert("Erro", "Não foi possível carregar as turmas.");
-          setLoading(false);
-          return;
+        if (atividadesError) {
+          Alert.alert("Erro", "Não foi possível carregar as atividades.");
+        } else {
+          setAtividades(atividadesData || []);
         }
-
-        // Carrega atividades de cada turma
-        const turmasComAtividades = await Promise.all(
-          turmasData.map(async (turma) => {
-            const { data: atividadesData } = await supabase
-              .from("atividades")
-              .select("*")
-              .eq("turma_id", turma.id)
-              .order("numero", { ascending: true });
-
-            return { ...turma, atividades: atividadesData || [] };
-          })
-        );
-
-        setTurmas(turmasComAtividades);
       } catch (err) {
         console.log(err);
-        Alert.alert("Erro", "Algo deu errado.");
+        Alert.alert("Erro", "Algo deu errado ao carregar os dados.");
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [turmaId]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigation.replace("Login");
+  const confirmarLogout = () => {
+    Alert.alert(
+      "Sair da conta",
+      "Tem certeza que deseja sair?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sim, sair",
+          style: "destructive",
+          onPress: () => realizarLogout(), // chama a função de logout real
+        },
+      ],
+      { cancelable: true }
+    );
   };
+const realizarLogout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
 
-  const abrirModal = (turmaId) => {
-    setNovaAtividade({ titulo: "", descricao: "", turmaId });
+    // Reseta a navegação completamente e volta pro login
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Login" }],
+    });
+  } catch (error) {
+    console.log("Erro ao sair:", error);
+    Alert.alert("Erro", "Não foi possível sair da conta.");
+  }
+};
+
+
+  const abrirModal = () => {
+    setNovaAtividade({ titulo: "", descricao: "" });
     setModalVisible(true);
   };
 
@@ -98,17 +111,19 @@ export default function AtividadesTurma({ navigation }) {
     }
 
     try {
-      const turma = turmas.find((t) => t.id === novaAtividade.turmaId);
-      const proximoNumero = turma.atividades.length + 1;
+      const proximoNumero = atividades.length + 1;
 
-      const { data, error } = await supabase.from("atividades").insert([
-        {
-          turma_id: novaAtividade.turmaId,
-          numero: proximoNumero,
-          titulo: novaAtividade.titulo,
-          descricao: novaAtividade.descricao,
-        },
-      ]);
+      const { data, error } = await supabase
+        .from("atividades")
+        .insert([
+          {
+            turma_id: turmaId,
+            numero: proximoNumero,
+            titulo: novaAtividade.titulo,
+            descricao: novaAtividade.descricao,
+          },
+        ])
+        .select();
 
       if (error) {
         console.log(error);
@@ -116,81 +131,74 @@ export default function AtividadesTurma({ navigation }) {
         return;
       }
 
-      // Atualiza a lista local
-      setTurmas((prev) =>
-        prev.map((t) =>
-          t.id === novaAtividade.turmaId
-            ? { ...t, atividades: [...t.atividades, data[0]] }
-            : t
-        )
-      );
-
+      setAtividades((prev) => [...prev, data[0]]);
       setModalVisible(false);
     } catch (err) {
       console.log(err);
-      Alert.alert("Erro", "Algo deu errado ao cadastrar.");
+      Alert.alert("Erro", "Falha ao salvar atividade.");
     }
   };
 
   if (loading) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 50 }}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.nomeProfessor}>{professor?.nome || "Professor"}</Text>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Sair</Text>
-        </TouchableOpacity>
+        <Text style={styles.profNome}>
+          {professor?.nome ? `Prof. ${professor.nome}` : "Professor"}
+        </Text>
+
       </View>
 
-      {turmas.length === 0 && (
-        <Text style={{ textAlign: "center", marginTop: 20 }}>Nenhuma turma cadastrada.</Text>
+      <Text style={styles.turmaTitulo}>{turmaNome}</Text>
+
+      <TouchableOpacity style={styles.cadastrarBtn} onPress={abrirModal}>
+        <Text style={styles.cadastrarText}>Cadastrar Atividade</Text>
+      </TouchableOpacity>
+
+      {atividades.length === 0 ? (
+        <Text style={{ textAlign: "center", marginTop: 20 }}>
+          Nenhuma atividade cadastrada ainda.
+        </Text>
+      ) : (
+        atividades.map((atividade) => (
+          <View key={atividade.id} style={styles.card}>
+            <Text style={styles.numero}>Atividade #{atividade.numero}</Text>
+            <Text style={styles.titulo}>{atividade.titulo}</Text>
+            <Text style={styles.descricao}>{atividade.descricao}</Text>
+          </View>
+        ))
       )}
 
-      {turmas.map((turma) => (
-        <View key={turma.id} style={styles.turmaContainer}>
-          <Text style={styles.turmaNome}>{turma.nome}</Text>
-
-          <TouchableOpacity style={styles.cadastrarBtn} onPress={() => abrirModal(turma.id)}>
-            <Text style={styles.cadastrarText}>Cadastrar Atividade</Text>
-          </TouchableOpacity>
-
-          {turma.atividades.length === 0 && (
-            <Text style={{ marginBottom: 15 }}>Nenhuma atividade nessa turma.</Text>
-          )}
-
-          {turma.atividades.map((atividade) => (
-            <View key={atividade.id} style={styles.atividadeCard}>
-              <Text style={styles.numero}>Atividade #{atividade.numero}: {atividade.titulo}</Text>
-              <Text style={styles.descricao}>{atividade.descricao}</Text>
-            </View>
-          ))}
-        </View>
-      ))}
-
-      {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Cadastrar Atividade</Text>
             <TextInput
-              placeholder="Título da Atividade"
+              placeholder="Título da atividade"
               value={novaAtividade.titulo}
-              onChangeText={(text) => setNovaAtividade({ ...novaAtividade, titulo: text })}
+              onChangeText={(text) =>
+                setNovaAtividade({ ...novaAtividade, titulo: text })
+              }
               style={styles.input}
             />
             <TextInput
               placeholder="Descrição"
               value={novaAtividade.descricao}
-              onChangeText={(text) => setNovaAtividade({ ...novaAtividade, descricao: text })}
+              onChangeText={(text) =>
+                setNovaAtividade({ ...novaAtividade, descricao: text })
+              }
               style={[styles.input, { height: 80 }]}
               multiline
             />
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.saveBtn} onPress={salvarAtividade}>
                 <Text style={styles.saveText}>Salvar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.cancelText}>Cancelar</Text>
               </TouchableOpacity>
             </View>
@@ -202,24 +210,155 @@ export default function AtividadesTurma({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f1f1f1", padding: 20 },
-  header: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
-  nomeProfessor: { fontSize: 20, fontWeight: "bold", color: "#20568c" },
-  logoutBtn: { backgroundColor: "#20568c", padding: 8, borderRadius: 10 },
-  logoutText: { color: "#fff", fontWeight: "bold" },
-  turmaContainer: { marginBottom: 25, padding: 10, backgroundColor: "#ffffff", borderRadius: 15 },
-  turmaNome: { fontSize: 18, fontWeight: "bold", color: "#20568c", marginBottom: 10 },
-  cadastrarBtn: { backgroundColor: "#3e8ed0", paddingVertical: 8, borderRadius: 12, alignItems: "center", marginBottom: 12 },
-  cadastrarText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
-  atividadeCard: { backgroundColor: "#ecececff", padding: 12, borderRadius: 12, marginBottom: 10 },
-  numero: { fontWeight: "bold", marginBottom: 5, color: "#20568c" },
-  descricao: { fontSize: 16, color: "#000" },
-  modalContainer: { flex: 1, justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)" },
-  modalContent: { margin: 20, backgroundColor: "#fff", borderRadius: 15, padding: 20 },
-  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 15, textAlign: "center" },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 10, padding: 10, marginBottom: 12 },
-  saveBtn: { backgroundColor: "#20568c", padding: 10, borderRadius: 10, flex: 1, marginRight: 5, alignItems: "center" },
-  saveText: { color: "#fff", fontWeight: "bold" },
-  cancelBtn: { backgroundColor: "#888", padding: 10, borderRadius: 10, flex: 1, marginLeft: 5, alignItems: "center" },
-  cancelText: { color: "#fff", fontWeight: "bold" },
+  container: {
+    flex: 1,
+    backgroundColor: "#eef3f9",
+    padding: 20,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 25,
+  },
+  profNome: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1a3c6e",
+    letterSpacing: 0.5,
+  },
+  turmaTitulo: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#102542",
+    marginBottom: 30,
+    marginTop: 10,
+    textAlign: "center",
+    letterSpacing: 0.8,
+    textShadowColor: "rgba(0, 0, 0, 0.37)",
+    textShadowOffset: { width: 3, height: 1 },
+    textShadowRadius: 3,
+  },
+  cadastrarBtn: {
+    backgroundColor: "#3568d4",
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+    marginBottom: 20,
+    shadowColor: "#3568d4",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  cadastrarText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 17,
+    letterSpacing: 0.5,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 15,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    borderLeftWidth: 5,
+    borderLeftColor: "#3568d4",
+  },
+  numero: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#3568d4",
+    marginBottom: 5,
+  },
+  titulo: {
+    fontSize: 18,
+    marginTop: 3,
+    fontWeight: "700",
+    color: "#1c1c1c",
+  },
+  descricao: {
+    fontSize: 15,
+    color: "#555",
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  modalContent: {
+    backgroundColor: "#ffffff",
+    marginHorizontal: 25,
+    borderRadius: 20,
+    padding: 25,
+    width: "90%",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#1a3c6e",
+  },
+  input: {
+    borderWidth: 1.2,
+    borderColor: "#ccd6eb",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: "#f8faff",
+    fontSize: 15,
+    color: "#333",
+  },
+  modalBtns: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15,
+  },
+  saveBtn: {
+    backgroundColor: "#1a3c6e",
+    flex: 1,
+    marginRight: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#1a3c6e",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  saveText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+    letterSpacing: 0.4,
+  },
+  cancelBtn: {
+    backgroundColor: "#9ba5b5",
+    flex: 1,
+    marginLeft: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cancelText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+    letterSpacing: 0.4,
+  },
 });
