@@ -14,7 +14,7 @@ export default function EditarTurma({ route, navigation }) {
   const { turma } = route.params;
 
   const [nome, setNome] = useState(turma.nome);
-  const [numeroTurma, setNumeroTurma] = useState(turma.numero_turma || "");
+  const [numeroTurma, setNumeroTurma] = useState(String(turma.numero) || "");
   const [loading, setLoading] = useState(false);
 
   async function salvarAlteracoes() {
@@ -29,7 +29,7 @@ export default function EditarTurma({ route, navigation }) {
       .from("turmas")
       .update({
         nome: nome,
-        numero_turma: numeroTurma,
+        numero: Number(numeroTurma),
         updated_at: new Date(),
       })
       .eq("id", turma.id);
@@ -43,7 +43,7 @@ export default function EditarTurma({ route, navigation }) {
     }
 
     Alert.alert("Sucesso", "Turma atualizada com sucesso!");
-    navigation.goBack();
+    navigation.navigate("ListarTurmas");
   }
 
   return (
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     borderColor: "#DDD",
   },
   botao: {
-    backgroundColor: "#007BFF",
+    backgroundColor: "#20568c",
     borderRadius: 10,
     padding: 15,
     alignItems: "center",

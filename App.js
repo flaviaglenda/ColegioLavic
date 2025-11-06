@@ -14,7 +14,6 @@ import { supabase } from "./supabase";
 import RealizarLogin from "./screens/RealizarLogin";
 import RealizarCadastro from "./screens/CadastroProfessor";
 import CadastrarTurma from "./screens/CadastrarTurma";
-import ListarTurmas from "./screens/ListarTurmas";
 import TelaProfessor from "./screens/ListarTurmas";
 import AtividadesTurma from "./screens/AtividadesTurma";
 import EditarTurma from "./screens/EditarTurma";

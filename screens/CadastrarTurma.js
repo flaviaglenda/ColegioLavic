@@ -52,7 +52,7 @@ export default function CadastrarTurma({ navigation }) {
         Alert.alert('Sucesso', 'Turma cadastrada com sucesso!');
         setNome('');
         setNumeroTurma('');
-        navigation.navigate('ListarTurmas');
+        navigation.navigate('TelaProfessor');
       }
     } catch (err) {
       console.error(err);
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     borderColor: '#DDD',
   },
   botao: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#20568c',
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',

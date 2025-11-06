@@ -40,7 +40,7 @@ export default function ListarTurmas() {
 
     const { data: turmasData, error: erroTurmas } = await supabase
       .from("turmas")
-      .select("id, nome, numero, created_at")
+      .select("id, nome, numero, created_at, updated_at")
       .eq("professor_id", prof.id)
       .order("created_at", { ascending: false });
 
@@ -59,43 +59,85 @@ export default function ListarTurmas() {
   }, [navigation]);
 
   async function excluirTurma(idTurma) {
+    console.log("clicou para excluir turma:", idTurma);
+
     Alert.alert("Confirmação", "Tem certeza que deseja excluir esta turma?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Excluir",
-        onPress: async () => {
-          const { count, error: erroCount } = await supabase
-            .from("atividades")
-            .select("*", { count: "exact", head: true })
-            .eq("turma_id", idTurma);
-
-          if (erroCount) {
-            Alert.alert("Erro", "Falha ao verificar atividades.");
-            return;
-          }
-
-          if (count > 0) {
-            Alert.alert(
-              "Aviso",
-              "Você não pode excluir uma turma com atividades cadastradas."
-            );
-            return;
-          }
-
-          const { error: erroDel } = await supabase
-            .from("turmas")
-            .delete()
-            .eq("id", idTurma);
-
-          if (erroDel) {
-            Alert.alert("Erro", "Não foi possível excluir a turma.");
-          } else {
-            Alert.alert("Sucesso", "Turma excluída com sucesso!");
-            carregarTurmas();
-          }
-        },
+        onPress: () => confirmarExcluirTurma(idTurma),
       },
     ]);
+  }
+
+  async function confirmarExcluirTurma(idTurma) {
+    console.log("chegou na segunda etapa", idTurma);
+
+    const { count, error: erroCount } = await supabase
+      .from("atividades")
+      .select("*", { count: "exact", head: true })
+      .eq("turma_id", idTurma);
+
+    if (erroCount) {
+      Alert.alert("Erro", "Falha ao verificar atividades.");
+      return;
+    }
+
+    if (count > 0) {
+      Alert.alert(
+        "Atenção",
+        `Esta turma possui ${count} atividades cadastradas.\nDeseja excluir TUDO mesmo assim?`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Excluir tudo",
+            style: "destructive",
+            onPress: async () => {
+              const { error: erroAtiv } = await supabase
+                .from("atividades")
+                .delete()
+                .eq("turma_id", idTurma);
+
+              if (erroAtiv) {
+                Alert.alert(
+                  "Erro",
+                  "Falha ao remover atividades antes da exclusão da turma."
+                );
+                return;
+              }
+
+              const { error: erroDel } = await supabase
+                .from("turmas")
+                .delete()
+                .eq("id", idTurma);
+
+              if (erroDel) {
+                Alert.alert(
+                  "Erro",
+                  "Falha ao excluir a turma após remover as atividades."
+                );
+              } else {
+                Alert.alert("Sucesso", "Turma e atividades removidas!");
+                carregarTurmas();
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    const { error: erroDel } = await supabase
+      .from("turmas")
+      .delete()
+      .eq("id", idTurma);
+
+    if (erroDel) {
+      Alert.alert("Erro", "Não foi possível excluir a turma.");
+    } else {
+      Alert.alert("Sucesso", "Turma excluída com sucesso!");
+      carregarTurmas();
+    }
   }
 
   function visualizarAtividades(turma) {
@@ -137,16 +179,30 @@ export default function ListarTurmas() {
                 Nome da turma:
               </Text>
               <Text style={{ fontSize: 16, marginBottom: 5 }}>{item.nome}</Text>
-              <Text style={{ fontSize: 18, fontWeight: "500"}}>
-                Nº:
+
+              <Text style={{ fontSize: 18, fontWeight: "500" }}>Nº:</Text>
+              <Text style={{ fontSize: 16, marginBottom: 5 }}>
+                {item.numero}
               </Text>
-              <Text style={{ fontSize: 16, marginBottom: 5 }}>{item.numero}</Text>
+
               <Text style={{ fontSize: 18, fontWeight: "500" }}>
                 Criado em:
               </Text>
               <Text style={{ fontSize: 16, marginBottom: 5 }}>
                 {new Date(item.created_at).toLocaleDateString()}
               </Text>
+
+              <Text style={{ fontSize: 18, fontWeight: "500" }}>
+                Editado em:
+              </Text>
+              <Text style={{ fontSize: 16, marginBottom: 5 }}>
+                {item.updated_at
+                  ? new Date(item.updated_at).toLocaleDateString() +
+                    " " +
+                    new Date(item.updated_at).toLocaleTimeString()
+                  : "Nenhuma alteração realizada"}
+              </Text>
+
               <View
                 style={{
                   flexDirection: "row",
@@ -157,7 +213,7 @@ export default function ListarTurmas() {
                 <TouchableOpacity
                   onPress={() => visualizarAtividades(item)}
                   style={{
-                    backgroundColor: "#007bff",
+                    backgroundColor: "#20568c",
                     padding: 8,
                     borderRadius: 5,
                   }}
@@ -195,10 +251,19 @@ export default function ListarTurmas() {
       )}
 
       <View style={{ marginTop: 20 }}>
-        <Button
-          title="Cadastrar Nova Turma"
+        <TouchableOpacity
           onPress={() => navigation.navigate("CadastrarTurma")}
-        />
+          style={{
+            backgroundColor: "#20568c",
+            paddingVertical: 14,
+            borderRadius: 8,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>
+            Cadastrar Nova Turma
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
